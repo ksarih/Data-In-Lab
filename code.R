@@ -1,9 +1,9 @@
 library(dplyr)
 
 
-df_VITAL_STATUS <- read.csv("VITAL_STATUS.csv")
-df_RANDOMIZATION <- read.csv("RANDOMIZATION.csv")
-df_SOFA <- read.csv("SOFA.csv")
+df_VITAL_STATUS <- read.csv("Data/VITAL_STATUS.csv")
+df_RANDOMIZATION <- read.csv("Data/RANDOMIZATION.csv")
+df_SOFA <- read.csv("Data/SOFA.csv")
 
 ### Id les individus mort avant J28
 Indiv_mort <- df_VITAL_STATUS %>%
@@ -58,6 +58,5 @@ sum(data$VITAL_STATUS_D28) #121 Survivants 28J
 
 
 
-
-
+sum(data$ARM_NUM) #199 traité au SB
 
