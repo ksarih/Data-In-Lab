@@ -1,4 +1,5 @@
 library(dplyr)
+library(ggplot2)
 
 
 df_VITAL_STATUS <- read.csv("Data/VITAL_STATUS.csv")
@@ -51,12 +52,69 @@ data <- data %>%
   select (SUBJID, INCL_SEPSIS_YN, AGE_CLASS, INCL_AKIN, VITAL_STATUS_D28, Sofa_ok, Favorable, ARM_NUM)
 
 
-
+###### Exploration 
 sum(data$Favorable) #67 Favorable
 sum(data$Sofa_ok) # 193 SOfa OK
 sum(data$VITAL_STATUS_D28) #121 Survivants 28J
 
-
-
 sum(data$ARM_NUM) #199 traité au SB
+
+a <- sum(data$Favorable == 1 & data$ARM_NUM == 1) #44
+c <- sum(data$Favorable == 1 & data$ARM_NUM == 0) #23
+b <- sum(data$Favorable == 0 & data$ARM_NUM == 1) #155
+d <- sum(data$Favorable == 0 & data$ARM_NUM == 0) #178
+
+Tab_contingence <- matrix(
+  c(a, b, c, d),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    ARM_NUM   = c("1_traitement_SB", "0_sans_SB"),
+    Favorable = c("1_oui", "0_non")
+  )
+)
+
+Tab_contingence
+
+
+#######################
+
+sum(data$AGE_CLASS == 1 & data$Favorable == 1  & data$ARM_NUM == 1)
+sum(data$AGE_CLASS == 0 & data$Favorable == 1  & data$ARM_NUM == 1)
+sum(data$AGE_CLASS == 1 & data$VITAL_STATUS_D28 == 1)
+
+
+############# Test du chi2 #############
+
+res_chi2 <- chisq.test(Tab_contingence, correct = FALSE)
+res_chi2
+
+res_chi2$expected #effectif attendue 
+res_chi2$p.value
+
+
+# p = 0.00428 < 0.05 donc on rejette HO donc une issue favorable dépend du traitement reçu 
+
+#################### ODDS #########
+
+# Odds ratio brut
+OR <- (a * d) / (b * c)
+OR
+
+# Log(OR) et erreur standard
+log_OR <- log(OR)
+SE_log_OR <- sqrt(1/a + 1/b + 1/c + 1/d)
+log_OR
+SE_log_OR
+# Intervalle de confiance à 95 %
+IC_inf <- exp(log_OR - 1.96 * SE_log_OR)
+IC_sup <- exp(log_OR + 1.96 * SE_log_OR)
+
+OR
+IC_inf
+IC_sup
+
+
+####################
+
 
