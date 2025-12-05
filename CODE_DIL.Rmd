@@ -1,0 +1,413 @@
+---
+title: "DATA IN LAB"
+output: html_document
+date: "2025-11-26"
+---
+
+# Introduction
+
+```{r ,  echo = FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+
+# Netoyage des données
+
+```{r données}
+
+
+
+df_VITAL_STATUS <- read.csv("Data/VITAL_STATUS.csv")
+df_RANDOMIZATION <- read.csv("Data/RANDOMIZATION.csv")
+df_SOFA <- read.csv("Data/SOFA.csv")
+
+### Id les individus mort avant J28
+Indiv_mort <- df_VITAL_STATUS %>%
+  filter(VITAL_STATUS_D28 == 0) %>%
+  select (SUBJID, SURNAME, NAME)
+# 279 mort avant J28
+
+
+
+
+### Création d'un df final 
+# filtrage des modalités
+df_RANDOMIZATION <- df_RANDOMIZATION %>%
+  select(SUBJID,INCL_SEPSIS_YN,AGE_CLASS,INCL_AKIN,ARM_NUM)
+
+df_VITAL_STATUS <- df_VITAL_STATUS %>%
+  select(SUBJID,VITAL_STATUS_D28)
+
+df_SOFA <- df_SOFA %>%
+  select(SUBJID,SOFA_hepatic_D7,SOFA_cardiovasc_D7, SOFA_respiratory_D7, SOFA_neurologic_D7, SOFA_renal_D7, SOFA_haematologic_D7)
+
+
+### Fusion finale
+data <- df_RANDOMIZATION %>%
+  left_join(df_VITAL_STATUS, by = "SUBJID") %>%
+  left_join(df_SOFA, by = "SUBJID")
+
+
+
+
+#calcul de l'estimateur / patient : Sofa < 3: (1) /Non (0)
+#et calcul de l'estimateur / patient : Favorable(1) /Non (0)
+#initialisation des nouvelles variables :
+data$Sofa_ok<-rep(NA, 400)
+data$Favorable<-rep(NA, 400)
+
+for (i in 1:400) {
+  data[i,"Sofa_ok"]<-if (max(data[i,c("SOFA_hepatic_D7","SOFA_cardiovasc_D7", "SOFA_respiratory_D7", "SOFA_neurologic_D7", "SOFA_renal_D7", "SOFA_haematologic_D7")]) < 3) 1 else 0 #Sofa_ok
+  data[i,'Favorable']<-if(data[i,"VITAL_STATUS_D28"]== 1 & data[i,"Sofa_ok"]==1) 1 else 0 #Favorable 1/0
+}
+
+
+
+data <- data %>%
+  select (SUBJID, INCL_SEPSIS_YN, AGE_CLASS, INCL_AKIN, VITAL_STATUS_D28, Sofa_ok, Favorable, ARM_NUM)
+
+head(data)
+```
+
+# Exploration 
+
+```{r}
+###### Exploration 
+sum(data$Favorable) #67 Favorable
+sum(data$Sofa_ok) # 193 SOfa OK
+sum(data$VITAL_STATUS_D28) #121 Survivants 28J
+sum(data$ARM_NUM) #199 traité au SB
+
+sum(data$AGE_CLASS == 1 & data$Favorable == 1  & data$ARM_NUM == 1)
+sum(data$AGE_CLASS == 0 & data$Favorable == 1  & data$ARM_NUM == 1)
+sum(data$AGE_CLASS == 1 & data$VITAL_STATUS_D28 == 1)
+sum(data$AGE_CLASS == 0)
+```
+
+
+```{r}
+a <- sum(data$Favorable == 1 & data$ARM_NUM == 1) #44
+c <- sum(data$Favorable == 1 & data$ARM_NUM == 0) #23
+b <- sum(data$Favorable == 0 & data$ARM_NUM == 1) #155
+d <- sum(data$Favorable == 0 & data$ARM_NUM == 0) #178
+
+Tab_contingence <- matrix(
+  c(a, b, c, d),
+  nrow = 2,
+  byrow = TRUE,
+  dimnames = list(
+    ARM_NUM   = c("1_traitement_SB", "0_sans_SB"),
+    Favorable = c("1_oui", "0_non")
+  )
+)
+
+Tab_contingence
+```
+
+
+
+# Test du CHI 2
+
+```{r}
+res_chi2 <- chisq.test(Tab_contingence, correct = FALSE)
+res_chi2
+
+res_chi2$expected #effectif attendue 
+res_chi2$p.value
+
+```
+On obtient une p_value = 0.00428 < 0.05 donc on rejette HO donc une issue favorable dépend du traitement reçu 
+
+
+
+## Test du CHI2 pour chaque sous groupe 
+
+### AGE 
+```{r}
+# Patient de < 65 ans
+tab_age0 <- table(
+  ARM_NUM   = data$ARM_NUM[data$AGE_CLASS == 0],
+  Favorable = data$Favorable[data$AGE_CLASS == 0]
+)
+test_age0 <- chisq.test(tab_age0, correct = FALSE)
+tab_age0
+test_age0
+
+
+
+# Patient de > 65 ans
+tab_age1 <- table(
+  ARM_NUM   = data$ARM_NUM[data$AGE_CLASS == 1],
+  Favorable = data$Favorable[data$AGE_CLASS == 1]
+)
+
+test_age1 <- chisq.test(tab_age1, correct = FALSE)
+tab_age1
+test_age1
+```
+
+
+Donc on a une p-values 0.002505 < 0.05 donc le traitement est éfficace sur les permsonnes de moins de 65 ans.
+Chez les patients de plus de 65 ans, on ne met pas en évidence d’association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 1,85 ; p = 0,17 > 0.05) 
+
+### AKIN
+
+```{r}
+# INCL_AKIN == 0
+tab_akin0 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_AKIN == 0],
+  Favorable = data$Favorable[data$INCL_AKIN == 0]
+)
+test_akin0 <- chisq.test(tab_akin0, correct = FALSE)
+tab_akin0
+test_akin0
+
+# INCL_AKIN == 1
+tab_akin1 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_AKIN == 1],
+  Favorable = data$Favorable[data$INCL_AKIN == 1]
+)
+test_akin1 <- chisq.test(tab_akin1, correct = FALSE)
+tab_akin1
+test_akin1
+#OR
+OR_AKIN1 <- (27*84)/(12*66)
+OR_AKIN1
+```
+
+Pour les patients ayant un score AKIN de 0 ou 1 le test n'est pas siginificatif les résultats peuvent etre du au hasard.
+
+Chez les patients avec AKIN = 1, il existe une association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 7,88 ; p = 0,005 < 0.05). La proportion d’issues favorables est d’environ 29 % sous SB contre 12,5 % sans SB.
+les odds d’issue favorable sont ≈ 2,9 fois plus élevées sous SB que sans SB chez les patients AKIN = 1.
+
+
+
+### sepsis
+
+```{r}
+# INCL_SEPSIS_YN == 0 (sans sepsis)
+tab_sepsis0 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_SEPSIS_YN == 0],
+  Favorable = data$Favorable[data$INCL_SEPSIS_YN == 0]
+)
+tab_sepsis0
+test_sepsis0 <-chisq.test(tab_sepsis0, correct = FALSE)
+test_sepsis0
+
+# INCL_SEPSIS_YN == 1 (avec sepsis)
+tab_sepsis1 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_SEPSIS_YN == 1],
+  Favorable = data$Favorable[data$INCL_SEPSIS_YN == 1]
+)
+test_sepsis1 <- chisq.test(tab_sepsis1, correct = FALSE)
+tab_sepsis1
+test_sepsis1
+```
+Chez les patients sans sepsis, on met en évidence une association significative entre traitement par bicarbonate et issue favorable : environ 26 % d’issues favorables sous SB contre 12 % sans SB (chi2(1) = 5,50 ; p = 0,019).
+
+Chez les patients avec sepsis, la proportion d’issues favorables est plus élevée sous SB ( 19 %) que sans SB (11 %),meme si le test n'est optimal la p- values reste siginificative (chi2(1) = 3,08 ; p = 0,079).
+
+
+
+
+## Tableau recapitulatif
+```{r}
+# Fonction pour calculer OR et IC95% à partir d'un tableau 2x2
+
+compute_OR_IC <- function(tab) {
+
+# tab : table(ARM_NUM, Favorable) avec ARM_NUM = 0/1, Favorable = 0/1
+
+a <- tab["1", "1"]  # Traitement, favorable
+b <- tab["1", "0"]  # Traitement, non favorable
+c <- tab["0", "1"]  # Contrôle, favorable
+d <- tab["0", "0"]  # Contrôle, non favorable
+
+# Correction si une des cases vaut 0 (pour éviter les divisions par 0)
+
+if (any(c(a, b, c, d) == 0)) {
+a <- a + 0.5
+b <- b + 0.5
+c <- c + 0.5
+d <- d + 0.5
+}
+
+OR <- (a * d) / (b * c)
+log_OR    <- log(OR)
+SE_log_OR <- sqrt(1/a + 1/b + 1/c + 1/d)
+IC_inf <- exp(log_OR - 1.96 * SE_log_OR)
+IC_sup <- exp(log_OR + 1.96 * SE_log_OR)
+
+c(OR = OR, IC_inf = IC_inf, IC_sup = IC_sup)
+}
+
+# OR + IC pour chaque tableau
+
+or_all     <- compute_OR_IC(Tab_contingence)
+or_age0    <- compute_OR_IC(tab_age0)
+or_age1    <- compute_OR_IC(tab_age1)
+or_akin0   <- compute_OR_IC(tab_akin0)
+or_akin1   <- compute_OR_IC(tab_akin1)
+or_sepsis0 <- compute_OR_IC(tab_sepsis0)
+or_sepsis1 <- compute_OR_IC(tab_sepsis1)
+
+# Tableau récapitulatif
+
+results_chi2 <- data.frame(
+Variable = c("Global",
+"AGE_CLASS", "AGE_CLASS",
+"INCL_AKIN", "INCL_AKIN",
+"INCL_SEPSIS_YN", "INCL_SEPSIS_YN"),
+Modalite = c("Tous",
+"<65", "≥65",
+"0", "1",
+"0", "1"),
+Chi2     = c(as.numeric(res_chi2$statistic),
+as.numeric(test_age0$statistic),
+as.numeric(test_age1$statistic),
+as.numeric(test_akin0$statistic),
+as.numeric(test_akin1$statistic),
+as.numeric(test_sepsis0$statistic),
+as.numeric(test_sepsis1$statistic)),
+p_value  = c(res_chi2$p.value,
+test_age0$p.value,
+test_age1$p.value,
+test_akin0$p.value,
+test_akin1$p.value,
+test_sepsis0$p.value,
+test_sepsis1$p.value),
+OR       = c(or_all["OR"],
+or_age0["OR"],
+or_age1["OR"],
+or_akin0["OR"],
+or_akin1["OR"],
+or_sepsis0["OR"],
+or_sepsis1["OR"]),
+IC_inf   = c(or_all["IC_inf"],
+or_age0["IC_inf"],
+or_age1["IC_inf"],
+or_akin0["IC_inf"],
+or_akin1["IC_inf"],
+or_sepsis0["IC_inf"],
+or_sepsis1["IC_inf"]),
+IC_sup   = c(or_all["IC_sup"],
+or_age0["IC_sup"],
+or_age1["IC_sup"],
+or_akin0["IC_sup"],
+or_akin1["IC_sup"],
+or_sepsis0["IC_sup"],
+or_sepsis1["IC_sup"])
+)
+
+results_chi2
+
+# Option : joli tableau dans le rapport
+
+knitr::kable(
+results_chi2,
+digits = 3,
+caption = "Tests du χ², odds ratios et intervalles de confiance pour le critère favorable (global et sous-groupes)"
+)
+
+```
+
+
+
+
+
+```{r}
+########## 1. Tableau global ##########
+
+tab_all <- table(
+  ARM_NUM   = data$ARM_NUM,
+  Favorable = data$Favorable
+)
+
+cat("=== Tableau global (tous les patients) ===\n")
+tab_all
+cat("\n\n")
+
+
+########## 2. Tableaux par classe d'âge ##########
+
+# AGE_CLASS == 0
+tab_age0 <- table(
+  ARM_NUM   = data$ARM_NUM[data$AGE_CLASS == 0],
+  Favorable = data$Favorable[data$AGE_CLASS == 0]
+)
+
+cat("=== Tableau AGE_CLASS = 0 ===\n")
+tab_age0
+cat("\n\n")
+
+# AGE_CLASS == 1
+tab_age1 <- table(
+  ARM_NUM   = data$ARM_NUM[data$AGE_CLASS == 1],
+  Favorable = data$Favorable[data$AGE_CLASS == 1]
+)
+
+cat("=== Tableau AGE_CLASS = 1 ===\n")
+tab_age1
+cat("\n\n")
+
+
+########## 3. Tableaux par AKIN ##########
+
+# INCL_AKIN == 0
+tab_akin0 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_AKIN == 0],
+  Favorable = data$Favorable[data$INCL_AKIN == 0]
+)
+
+cat("=== Tableau INCL_AKIN = 0 ===\n")
+tab_akin0
+cat("\n\n")
+
+# INCL_AKIN == 1
+tab_akin1 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_AKIN == 1],
+  Favorable = data$Favorable[data$INCL_AKIN == 1]
+)
+
+cat("=== Tableau INCL_AKIN = 1 ===\n")
+tab_akin1
+cat("\n\n")
+
+
+########## 4. Tableaux par sepsis ##########
+
+# INCL_SEPSIS_YN == 0 (sans sepsis)
+tab_sepsis0 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_SEPSIS_YN == 0],
+  Favorable = data$Favorable[data$INCL_SEPSIS_YN == 0]
+)
+
+cat("=== Tableau INCL_SEPSIS_YN = 0 (sans sepsis) ===\n")
+tab_sepsis0
+cat("\n\n")
+
+# INCL_SEPSIS_YN == 1 (avec sepsis)
+tab_sepsis1 <- table(
+  ARM_NUM   = data$ARM_NUM[data$INCL_SEPSIS_YN == 1],
+  Favorable = data$Favorable[data$INCL_SEPSIS_YN == 1]
+)
+
+cat("=== Tableau INCL_SEPSIS_YN = 1 (avec sepsis) ===\n")
+tab_sepsis1
+cat("\n\n")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
