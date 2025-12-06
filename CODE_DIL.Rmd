@@ -211,38 +211,52 @@ Chez les patients avec sepsis, la proportion d’issues favorables est plus éle
 
 
 
-## Tableau recapitulatif
+## Tableau récapitulatif
+
+
+
+
 ```{r}
+# On recrée un tableau global propre au cas où (avec modalités 0 / 1)
+Tab_contingence <- table(
+  ARM_NUM   = data$ARM_NUM,
+  Favorable = data$Favorable
+)
+
 # Fonction pour calculer OR et IC95% à partir d'un tableau 2x2
-
-compute_OR_IC <- function(tab) {
-
 # tab : table(ARM_NUM, Favorable) avec ARM_NUM = 0/1, Favorable = 0/1
 
-a <- tab["1", "1"]  # Traitement, favorable
-b <- tab["1", "0"]  # Traitement, non favorable
-c <- tab["0", "1"]  # Contrôle, favorable
-d <- tab["0", "0"]  # Contrôle, non favorable
-
-# Correction si une des cases vaut 0 (pour éviter les divisions par 0)
-
-if (any(c(a, b, c, d) == 0)) {
-a <- a + 0.5
-b <- b + 0.5
-c <- c + 0.5
-d <- d + 0.5
+compute_OR_IC <- function(tab) {
+  
+  # Vérification légère : on s'assure qu'on a bien les modalités "0" et "1"
+  if (!all(c("0", "1") %in% rownames(tab)) || !all(c("0", "1") %in% colnames(tab))) {
+    stop("Le tableau doit avoir des lignes et colonnes nommées '0' et '1'.")
+  }
+  
+  a <- tab["1", "1"]  # Traitement, favorable
+  b <- tab["1", "0"]  # Traitement, non favorable
+  c <- tab["0", "1"]  # Contrôle, favorable
+  d <- tab["0", "0"]  # Contrôle, non favorable
+  
+  # Correction si une des cases vaut 0 (pour éviter divisions par 0)
+  if (any(c(a, b, c, d) == 0)) {
+    a <- a + 0.5
+    b <- b + 0.5
+    c <- c + 0.5
+    d <- d + 0.5
+  }
+  
+  OR       <- (a * d) / (b * c)
+  log_OR   <- log(OR)
+  SE_logOR <- sqrt(1 / a + 1 / b + 1 / c + 1 / d)
+  
+  IC_inf <- exp(log_OR - 1.96 * SE_logOR)
+  IC_sup <- exp(log_OR + 1.96 * SE_logOR)
+  
+  c(OR = OR, IC_inf = IC_inf, IC_sup = IC_sup)
 }
 
-OR <- (a * d) / (b * c)
-log_OR    <- log(OR)
-SE_log_OR <- sqrt(1/a + 1/b + 1/c + 1/d)
-IC_inf <- exp(log_OR - 1.96 * SE_log_OR)
-IC_sup <- exp(log_OR + 1.96 * SE_log_OR)
-
-c(OR = OR, IC_inf = IC_inf, IC_sup = IC_sup)
-}
-
-# OR + IC pour chaque tableau
+# OR + IC pour chaque tableau déjà créé plus haut
 
 or_all     <- compute_OR_IC(Tab_contingence)
 or_age0    <- compute_OR_IC(tab_age0)
@@ -255,149 +269,81 @@ or_sepsis1 <- compute_OR_IC(tab_sepsis1)
 # Tableau récapitulatif
 
 results_chi2 <- data.frame(
-Variable = c("Global",
-"AGE_CLASS", "AGE_CLASS",
-"INCL_AKIN", "INCL_AKIN",
-"INCL_SEPSIS_YN", "INCL_SEPSIS_YN"),
-Modalite = c("Tous",
-"<65", "≥65",
-"0", "1",
-"0", "1"),
-Chi2     = c(as.numeric(res_chi2$statistic),
-as.numeric(test_age0$statistic),
-as.numeric(test_age1$statistic),
-as.numeric(test_akin0$statistic),
-as.numeric(test_akin1$statistic),
-as.numeric(test_sepsis0$statistic),
-as.numeric(test_sepsis1$statistic)),
-p_value  = c(res_chi2$p.value,
-test_age0$p.value,
-test_age1$p.value,
-test_akin0$p.value,
-test_akin1$p.value,
-test_sepsis0$p.value,
-test_sepsis1$p.value),
-OR       = c(or_all["OR"],
-or_age0["OR"],
-or_age1["OR"],
-or_akin0["OR"],
-or_akin1["OR"],
-or_sepsis0["OR"],
-or_sepsis1["OR"]),
-IC_inf   = c(or_all["IC_inf"],
-or_age0["IC_inf"],
-or_age1["IC_inf"],
-or_akin0["IC_inf"],
-or_akin1["IC_inf"],
-or_sepsis0["IC_inf"],
-or_sepsis1["IC_inf"]),
-IC_sup   = c(or_all["IC_sup"],
-or_age0["IC_sup"],
-or_age1["IC_sup"],
-or_akin0["IC_sup"],
-or_akin1["IC_sup"],
-or_sepsis0["IC_sup"],
-or_sepsis1["IC_sup"])
+  Variable = c(
+    "Global",
+    "AGE_CLASS", "AGE_CLASS",
+    "INCL_AKIN", "INCL_AKIN",
+    "INCL_SEPSIS_YN", "INCL_SEPSIS_YN"
+  ),
+  Modalite = c(
+    "Tous",
+    "<65", "≥65",
+    "0", "1",
+    "0", "1"
+  ),
+  Chi2 = c(
+    as.numeric(res_chi2$statistic),
+    as.numeric(test_age0$statistic),
+    as.numeric(test_age1$statistic),
+    as.numeric(test_akin0$statistic),
+    as.numeric(test_akin1$statistic),
+    as.numeric(test_sepsis0$statistic),
+    as.numeric(test_sepsis1$statistic)
+  ),
+  p_value = c(
+    res_chi2$p.value,
+    test_age0$p.value,
+    test_age1$p.value,
+    test_akin0$p.value,
+    test_akin1$p.value,
+    test_sepsis0$p.value,
+    test_sepsis1$p.value
+  ),
+  OR = c(
+    or_all["OR"],
+    or_age0["OR"],
+    or_age1["OR"],
+    or_akin0["OR"],
+    or_akin1["OR"],
+    or_sepsis0["OR"],
+    or_sepsis1["OR"]
+  ),
+  IC_inf = c(
+    or_all["IC_inf"],
+    or_age0["IC_inf"],
+    or_age1["IC_inf"],
+    or_akin0["IC_inf"],
+    or_akin1["IC_inf"],
+    or_sepsis0["IC_inf"],
+    or_sepsis1["IC_inf"]
+  ),
+  IC_sup = c(
+    or_all["IC_sup"],
+    or_age0["IC_sup"],
+    or_age1["IC_sup"],
+    or_akin0["IC_sup"],
+    or_akin1["IC_sup"],
+    or_sepsis0["IC_sup"],
+    or_sepsis1["IC_sup"]
+  )
 )
 
 results_chi2
 
-# Option : joli tableau dans le rapport
-
-knitr::kable(
-results_chi2,
-digits = 3,
-caption = "Tests du χ², odds ratios et intervalles de confiance pour le critère favorable (global et sous-groupes)"
-)
-
 ```
+L’analyse globale montre une association statistiquement significative entre le traitement par bicarbonate (SB) et l’issue favorable. Les patients traités présentent environ 2,2 fois plus de chances d’obtenir une évolution favorable que ceux du groupe contrôle (OR = 2,20 ; IC95% : 1,27–3,80). L’intervalle de confiance ne contenant pas 1, cet effet apparaît robuste. Ces résultats suggèrent un bénéfice global du traitement dans la population étudiée.
+
+l’étude par sous-groupe révèle une forte hétérogénéité selon l’âge. Le traitement SB est particulièrement efficace chez les patients de moins de 65 ans, avec un odds ratio d’environ 4,4 (IC95% : 1,58–12,25). À l’inverse, aucun effet significatif n’est observé chez les patients de 65 ans et plus (OR = 1,60 ; p = 0,17). Cela suggère que le bénéfice du SB est principalement porté par les patients plus jeunes.
+
+Une hétérogénéité comparable apparaît selon le degré d’atteinte rénale. Chez les patients avec AKIN = 0, aucun effet significatif n’est détecté. En revanche, chez ceux présentant une atteinte rénale modérée (AKIN = 1), le traitement est associé à un gain net (OR = 2,86 ; IC95% : 1,35–6,08). Le SB semble donc particulièrement bénéfique lorsque l’atteinte rénale est déjà présente.
+
+Le traitement SB améliore significativement l’issue favorable chez les patients sans sepsis (OR = 2,63 ; p = 0,019). Chez les patients avec sepsis, une tendance en faveur du traitement est observée (OR = 1,92), mais celle-ci n’atteint pas le seuil de significativité statistique (p = 0,079). Le bénéfice du SB semble donc plus marqué chez les patients non septicémiques.
+
+
+En résumé, le traitement au bicarbonate (SB) montre un effet favorable global, mais celui-ci varie selon les caractéristiques des patients. Les sous-groupes qui tirent le plus grand bénéfice sont les patients jeunes (<65 ans), avec AKIN = 1, et sans sepsis. Chez les patients plus âgés ou septicémiques, l’effet apparaît moins net ou non significatif.
 
 
 
-
-
-```{r}
-########## 1. Tableau global ##########
-
-tab_all <- table(
-  ARM_NUM   = data$ARM_NUM,
-  Favorable = data$Favorable
-)
-
-cat("=== Tableau global (tous les patients) ===\n")
-tab_all
-cat("\n\n")
-
-
-########## 2. Tableaux par classe d'âge ##########
-
-# AGE_CLASS == 0
-tab_age0 <- table(
-  ARM_NUM   = data$ARM_NUM[data$AGE_CLASS == 0],
-  Favorable = data$Favorable[data$AGE_CLASS == 0]
-)
-
-cat("=== Tableau AGE_CLASS = 0 ===\n")
-tab_age0
-cat("\n\n")
-
-# AGE_CLASS == 1
-tab_age1 <- table(
-  ARM_NUM   = data$ARM_NUM[data$AGE_CLASS == 1],
-  Favorable = data$Favorable[data$AGE_CLASS == 1]
-)
-
-cat("=== Tableau AGE_CLASS = 1 ===\n")
-tab_age1
-cat("\n\n")
-
-
-########## 3. Tableaux par AKIN ##########
-
-# INCL_AKIN == 0
-tab_akin0 <- table(
-  ARM_NUM   = data$ARM_NUM[data$INCL_AKIN == 0],
-  Favorable = data$Favorable[data$INCL_AKIN == 0]
-)
-
-cat("=== Tableau INCL_AKIN = 0 ===\n")
-tab_akin0
-cat("\n\n")
-
-# INCL_AKIN == 1
-tab_akin1 <- table(
-  ARM_NUM   = data$ARM_NUM[data$INCL_AKIN == 1],
-  Favorable = data$Favorable[data$INCL_AKIN == 1]
-)
-
-cat("=== Tableau INCL_AKIN = 1 ===\n")
-tab_akin1
-cat("\n\n")
-
-
-########## 4. Tableaux par sepsis ##########
-
-# INCL_SEPSIS_YN == 0 (sans sepsis)
-tab_sepsis0 <- table(
-  ARM_NUM   = data$ARM_NUM[data$INCL_SEPSIS_YN == 0],
-  Favorable = data$Favorable[data$INCL_SEPSIS_YN == 0]
-)
-
-cat("=== Tableau INCL_SEPSIS_YN = 0 (sans sepsis) ===\n")
-tab_sepsis0
-cat("\n\n")
-
-# INCL_SEPSIS_YN == 1 (avec sepsis)
-tab_sepsis1 <- table(
-  ARM_NUM   = data$ARM_NUM[data$INCL_SEPSIS_YN == 1],
-  Favorable = data$Favorable[data$INCL_SEPSIS_YN == 1]
-)
-
-cat("=== Tableau INCL_SEPSIS_YN = 1 (avec sepsis) ===\n")
-tab_sepsis1
-cat("\n\n")
-
-```
 
 
 
