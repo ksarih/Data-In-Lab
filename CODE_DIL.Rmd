@@ -347,13 +347,213 @@ En résumé, le traitement au bicarbonate (SB) montre un effet favorable global,
 
 
 
+# Regression logistique 
+
+
+## Régression logistique simple : effet du traitement SB sur l’issue favorable
+
+```{r logit_simple}
+# Modèle logistique : Favorable ~ ARM_NUM
+# (ARM_NUM = 0 : contrôle, 1 : traitement SB)
+
+mod_simple <- glm(
+  Favorable ~ ARM_NUM,
+  data   = data,
+  family = binomial(link = "logit")
+)
+
+# Résumé du modèle (coefficients sur l'échelle log-odds)
+summary(mod_simple)
+
+# Odds ratios (exp(beta))
+OR_simple <- exp(coef(mod_simple))
+OR_simple
+
+# Intervalles de confiance 95% des OR
+IC_OR_simple <- exp(confint(mod_simple))   # IC pour les coefficients, puis exponentiés
+IC_OR_simple
+
+# Tableau récapitulatif propre
+res_mod_simple <- data.frame(
+  Coef    = names(OR_simple),
+  OR      = OR_simple,
+  IC_inf  = IC_OR_simple[, 1],
+  IC_sup  = IC_OR_simple[, 2]
+)
+
+res_mod_simple
 
 
 
+````
+
+
+## Régression logistique ajustée : effet du traitement SB ajusté sur l’âge, AKIN et sepsis
+
+```{r logit_ajuste}
+
+# Modèle logistique ajusté
+mod_ajuste <- glm(
+  Favorable ~ ARM_NUM + AGE_CLASS + INCL_AKIN + INCL_SEPSIS_YN,
+  data   = data,
+  family = binomial(link = "logit")
+)
+
+summary(mod_ajuste)
+
+# EXTRACTION : OR + IC95% + p-values
+OR_ajuste      <- exp(coef(mod_ajuste))
+IC_OR_ajuste   <- exp(confint(mod_ajuste)) 
+p_values       <- summary(mod_ajuste)$coefficients[, 4]   # colonne des p-values
+coefs        <- summary(mod_ajuste)$coefficients
+
+# Data frame final propre
+res_mod_ajuste <- data.frame(
+  Coef      = coefs[, "Estimate"],
+  OR      = OR_ajuste,
+  IC_inf  = IC_OR_ajuste[, 1],
+  IC_sup  = IC_OR_ajuste[, 2],
+  p_value = p_values
+)
+
+res_mod_ajuste
+````
+
+Après ajustement sur l’âge, le score AKIN et la présence de sepsis, le traitement par bicarbonate reste significativement associé à une issue favorable. Les patients traités ont environ 2,3 fois plus de chances d’obtenir un résultat favorable que ceux du groube sns SB (p = 0.003).
+
+L’âge et le score AKIN sont également associés à l’issue : les patients ≥65 ans et ceux avec un score AKIN >= 2 présentent chacun une probabilité plus élevée d’issu favorable. En revanche, le statut de sepsis n’a pas montré d’effet significatif dans ce modèle.
+
+Globalement, le traitement conserve un effet positif même après prise en compte des autres caractéristiques cliniques.
 
 
 
+## Régression logistique avec interactions : ARM_NUM croisé avec AGE_CLASS, INCL_AKIN et INCL_SEPSIS_YN
+
+```{r}
+
+# Modèle avec interactions : ARM_NUM croisé avec les 3 caractéristiques
+mod_inter <- glm(
+  Favorable ~ ARM_NUM * AGE_CLASS +
+              ARM_NUM * INCL_AKIN +
+              ARM_NUM * INCL_SEPSIS_YN,
+  data   = data,
+  family = binomial(link = "logit")
+)
+
+summary(mod_inter)
+
+# Extraction OR, IC95%, p-values
+coef_inter   <- coef(mod_inter)
+OR_inter     <- exp(coef_inter)
+IC_inter     <- exp(confint(mod_inter))
+p_values_int <- summary(mod_inter)$coefficients[, 4]
+
+# Tableau récapitulatif
+res_mod_inter <- data.frame(
+  Coef    = names(OR_inter),
+  OR      = OR_inter,
+  IC_inf  = IC_inter[, 1],
+  IC_sup  = IC_inter[, 2],
+  p_value = p_values_int
+)
+
+res_mod_inter
+````
+
+### Régression logistique avec interaction ARM_NUM × AGE_CLASS
+
+```{r logit_inter_age}
+mod_inter_age <- glm(
+  Favorable ~ ARM_NUM * AGE_CLASS,
+  data   = data,
+  family = binomial(link = "logit")
+)
+
+summary(mod_inter_age)
+
+# OR + IC95% + p-values
+coef_age   <- coef(mod_inter_age)
+OR_age     <- exp(coef_age)
+IC_age     <- exp(confint(mod_inter_age))
+p_age      <- summary(mod_inter_age)$coefficients[, 4]
+
+res_mod_inter_age <- data.frame(
+  Coef    = names(OR_age),
+  OR      = OR_age,
+  IC_inf  = IC_age[, 1],
+  IC_sup  = IC_age[, 2],
+  p_value = p_age
+)
+
+res_mod_inter_age
+````
 
 
+En utilisant un seuil de tolérance élargi (alpha = 10%), l’interaction ARM_NUM × AGE_CLASS devient proche du seuil (p=0.1). Cela suggère une tendance indiquant que l’effet du traitement pourrait être plus marqué chez les <65 ans que chez les >65 ans.
+
+En termes de coefficients, le traitement présente un effet très important chez les <65 ans (OR = 4.4), alors que cet effet est plus modéré chez les >65 ans (OR = 1.6). L’âge et le traitement restent tous deux significatifs de manière indépendante, mais l’interaction ne l’est pas clairement.
+
+
+
+## Régression logistique avec interaction ARM_NUM × INCL_AKIN
+
+```{r}
+mod_inter_akin <- glm(
+  Favorable ~ ARM_NUM * INCL_AKIN,
+  data   = data,
+  family = binomial(link = "logit")
+)
+
+summary(mod_inter_akin)
+
+# OR + IC95% + p-values
+coef_akin   <- coef(mod_inter_akin)
+OR_akin     <- exp(coef_akin)
+IC_akin     <- exp(confint(mod_inter_akin))
+p_akin      <- summary(mod_inter_akin)$coefficients[, 4]
+
+res_mod_inter_akin <- data.frame(
+  Coef    = names(OR_akin),
+  OR      = OR_akin,
+  IC_inf  = IC_akin[, 1],
+  IC_sup  = IC_akin[, 2],
+  p_value = p_akin
+)
+
+res_mod_inter_akin
+`````
+
+
+
+---
+
+## Régression logistique avec interaction ARM_NUM × INCL_SEPSIS_YN
+
+```{r logit_inter_sepsis}
+mod_inter_sepsis <- glm(
+  Favorable ~ ARM_NUM * INCL_SEPSIS_YN,
+  data   = data,
+  family = binomial(link = "logit")
+)
+
+summary(mod_inter_sepsis)
+
+# OR + IC95% + p-values
+coef_sepsis   <- coef(mod_inter_sepsis)
+OR_sepsis     <- exp(coef_sepsis)
+IC_sepsis     <- exp(confint(mod_inter_sepsis))
+p_sepsis      <- summary(mod_inter_sepsis)$coefficients[, 4]
+
+res_mod_inter_sepsis <- data.frame(
+  Coef    = names(OR_sepsis),
+  OR      = OR_sepsis,
+  IC_inf  = IC_sepsis[, 1],
+  IC_sup  = IC_sepsis[, 2],
+  p_value = p_sepsis
+)
+
+res_mod_inter_sepsis
+
+````
 
 
