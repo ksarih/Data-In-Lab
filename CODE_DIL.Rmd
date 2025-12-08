@@ -11,8 +11,7 @@ library(dplyr)
 library(ggplot2)
 ```
 
-
-# Netoyage des données
+# Nettoyage des données
 
 ```{r données}
 
@@ -70,7 +69,7 @@ data <- data %>%
 head(data)
 ```
 
-# Exploration 
+# Exploration
 
 ```{r}
 ###### Exploration 
@@ -84,7 +83,6 @@ sum(data$AGE_CLASS == 0 & data$Favorable == 1  & data$ARM_NUM == 1)
 sum(data$AGE_CLASS == 1 & data$VITAL_STATUS_D28 == 1)
 sum(data$AGE_CLASS == 0)
 ```
-
 
 ```{r}
 a <- sum(data$Favorable == 1 & data$ARM_NUM == 1) #44
@@ -105,8 +103,6 @@ Tab_contingence <- matrix(
 Tab_contingence
 ```
 
-
-
 # Test du CHI 2
 
 ```{r}
@@ -117,13 +113,13 @@ res_chi2$expected #effectif attendue
 res_chi2$p.value
 
 ```
-On obtient une p_value = 0.00428 < 0.05 donc on rejette HO donc une issue favorable dépend du traitement reçu 
 
+On obtient une p_value = 0.00428 \< 0.05 donc on rejette HO donc une issue favorable dépend du traitement reçu
 
+## Test du CHI2 pour chaque sous groupe
 
-## Test du CHI2 pour chaque sous groupe 
+### AGE
 
-### AGE 
 ```{r}
 # Patient de < 65 ans
 tab_age0 <- table(
@@ -147,9 +143,7 @@ tab_age1
 test_age1
 ```
 
-
-Donc on a une p-values 0.002505 < 0.05 donc le traitement est éfficace sur les permsonnes de moins de 65 ans.
-Chez les patients de plus de 65 ans, on ne met pas en évidence d’association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 1,85 ; p = 0,17 > 0.05) 
+Donc on a une p-values 0.002505 \< 0.05 donc le traitement est efficace sur les personnes de moins de 65 ans. Chez les patients de plus de 65 ans, on ne met pas en évidence association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 1,85 ; p = 0,17 \> 0.05)
 
 ### AKIN
 
@@ -176,12 +170,9 @@ OR_AKIN1 <- (27*84)/(12*66)
 OR_AKIN1
 ```
 
-Pour les patients ayant un score AKIN de 0 ou 1 le test n'est pas siginificatif les résultats peuvent etre du au hasard.
+Pour les patients ayant un score AKIN de 0 ou 1 le test n'est pas significatif les résultats peuvent etre du au hasard.
 
-Chez les patients avec AKIN = 1, il existe une association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 7,88 ; p = 0,005 < 0.05). La proportion d’issues favorables est d’environ 29 % sous SB contre 12,5 % sans SB.
-les odds d’issue favorable sont ≈ 2,9 fois plus élevées sous SB que sans SB chez les patients AKIN = 1.
-
-
+Chez les patients avec AKIN = 1, il existe une association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 7,88 ; p = 0,005 \< 0.05). La proportion d’issues favorables est d’environ 29 % sous SB contre 12,5 % sans SB. les odds d’issue favorable sont ≈ 2,9 fois plus élevées sous SB que sans SB chez les patients AKIN = 1.
 
 ### sepsis
 
@@ -204,17 +195,12 @@ test_sepsis1 <- chisq.test(tab_sepsis1, correct = FALSE)
 tab_sepsis1
 test_sepsis1
 ```
+
 Chez les patients sans sepsis, on met en évidence une association significative entre traitement par bicarbonate et issue favorable : environ 26 % d’issues favorables sous SB contre 12 % sans SB (chi2(1) = 5,50 ; p = 0,019).
 
 Chez les patients avec sepsis, la proportion d’issues favorables est plus élevée sous SB ( 19 %) que sans SB (11 %),meme si le test n'est optimal la p- values reste siginificative (chi2(1) = 3,08 ; p = 0,079).
 
-
-
-
 ## Tableau récapitulatif
-
-
-
 
 ```{r}
 # On recrée un tableau global propre au cas où (avec modalités 0 / 1)
@@ -331,24 +317,237 @@ results_chi2 <- data.frame(
 results_chi2
 
 ```
+
 L’analyse globale montre une association statistiquement significative entre le traitement par bicarbonate (SB) et l’issue favorable. Les patients traités présentent environ 2,2 fois plus de chances d’obtenir une évolution favorable que ceux du groupe contrôle (OR = 2,20 ; IC95% : 1,27–3,80). L’intervalle de confiance ne contenant pas 1, cet effet apparaît robuste. Ces résultats suggèrent un bénéfice global du traitement dans la population étudiée.
 
-l’étude par sous-groupe révèle une forte hétérogénéité selon l’âge. Le traitement SB est particulièrement efficace chez les patients de moins de 65 ans, avec un odds ratio d’environ 4,4 (IC95% : 1,58–12,25). À l’inverse, aucun effet significatif n’est observé chez les patients de 65 ans et plus (OR = 1,60 ; p = 0,17). Cela suggère que le bénéfice du SB est principalement porté par les patients plus jeunes.
+L’étude par sous-groupe révèle une forte hétérogénéité selon l’âge. Le traitement SB est particulièrement efficace chez les patients de moins de 65 ans, avec un odds ratio d’environ 4,4 (IC95% : 1,58–12,25). À l’inverse, aucun effet significatif n’est observé chez les patients de 65 ans et plus (OR = 1,60 ; p = 0,17). Cela suggère que le bénéfice du SB est principalement porté par les patients plus jeunes.
 
 Une hétérogénéité comparable apparaît selon le degré d’atteinte rénale. Chez les patients avec AKIN = 0, aucun effet significatif n’est détecté. En revanche, chez ceux présentant une atteinte rénale modérée (AKIN = 1), le traitement est associé à un gain net (OR = 2,86 ; IC95% : 1,35–6,08). Le SB semble donc particulièrement bénéfique lorsque l’atteinte rénale est déjà présente.
 
-Le traitement SB améliore significativement l’issue favorable chez les patients sans sepsis (OR = 2,63 ; p = 0,019). Chez les patients avec sepsis, une tendance en faveur du traitement est observée (OR = 1,92), mais celle-ci n’atteint pas le seuil de significativité statistique (p = 0,079). Le bénéfice du SB semble donc plus marqué chez les patients non septicémiques.
+Le traitement SB améliore significativement l’issue favorable chez les patients sans sepsis (OR = 2,63 ; p = 0,019). Chez les patients avec sepsis, une tendance en faveur du traitement est observée (OR = 1,92), mais celle-ci n’atteint pas le seuil de significativité statistique (p = 0,079\>0,05). Le bénéfice du SB semble donc plus marqué chez les patients non septicémiques.
 
+En résumé, le traitement au bicarbonate (SB) montre un effet favorable global, mais celui-ci varie selon les caractéristiques des patients. Les sous-groupes qui tirent le plus grand bénéfice sont les patients jeunes (\<65 ans), avec AKIN = 1, et sans sepsis. Chez les patients plus âgés ou septicémiques, l’effet apparaît moins net et un effectif plus important est nécessaire pour prouver un effet significatif.
 
-En résumé, le traitement au bicarbonate (SB) montre un effet favorable global, mais celui-ci varie selon les caractéristiques des patients. Les sous-groupes qui tirent le plus grand bénéfice sont les patients jeunes (<65 ans), avec AKIN = 1, et sans sepsis. Chez les patients plus âgés ou septicémiques, l’effet apparaît moins net ou non significatif.
+# Test de Fisher exact
 
+Ce test est choisit pour sa précision et il reste applicable et exact aux petits effectifs. Pour les grands effectifs, le calcul serait fastidieux à la main, mais reste instantané et exact pour un tableau 2x2. Le test choisit est unilatérale car un souhaite prouver qu'il plus de patients en état favorable dans le groupe B traité par le bicarbonate comparé au groupe A sans bicarbonate. Sous l'hypothèse H0, l'injection de bicarbonate dans le groupe B n'a pas effet et donc la proportion de cas favorables dans B est égale à celle dans A. On pourra comparer ces résultats à ceux du Chi-deux.
 
+```{r}
+library(exact2x2)
+#Pour tableau 2x2
+fisherData<-function(tab){
+  test<-fisher.exact(tab, alternative = "greater") #two.sided ?
+  p_val<-test$p.value
+  data.frame(p_val=round(p_val,4))
+}
+```
 
+Une autre fonction sera utile pour calculer les fréquences et l'odd ration accompagné de son intervalle de confiance à 95%.
 
+```{r}
+#Favorable en ligne et ARM en colonne, tableau 2x2
+prop<-function(tab) {
+  pA<-tab[2,1]/sum(tab[,1])
+  pB<-tab[2,2]/sum(tab[,2])
+  #Odd ration et intervalle de confiance
+  OR<-(pB/(1-pB))/(pA/(1-pA))
+  SE<-sqrt(sum(1/tab))
+  born<-c(-1.96,1.96)
+  IClog<-log(OR)+born*SE
+  IC<-exp(IClog)
+    data.frame(pA=round(pA,3),pB=round(pB,3), OR=round(OR,2),
+             "IC b_inf"=round(IC[1],2), "IC b_sup"=round(IC[2],2))
+}
 
+```
 
-# Regression logistique 
+## Préparation des tableaux 2x2
 
+On utilise la fonction table() de R. Après de nombreux essais dans la console, on peut obtenir directement les tableaux suivant les trois variables de stratifications :
+
+```{r}
+#Tableaux des données stratifiées.
+tab_groupe <- table(Favorable = data$Favorable, Arm = data$ARM_NUM)
+tab_Age <- table(Favorable = data$Favorable, Arm = data$ARM_NUM, Age = data$AGE_CLASS)
+tab_Akin <- table(Favorable = data$Favorable, Arm = data$ARM_NUM, Akin = data$INCL_AKIN)
+tab_Sepsis<-table(Favorable = data$Favorable, Arm = data$ARM_NUM, Sepsis = data$INCL_SEPSIS_YN)
+```
+
+Les 3 derniers tableaux contiennent chacun 2 tableaux 2x2 selon la troisième variable spécifiée dans les parenthèses. On récupère donc des tableaux prêts pour les fonctions présentées au dessus et pour l'étude stratifiée. On ajoute enfin une fonction pour visualiser les données :
+
+```{r}
+brplot<-function(dt, main){
+  print(dt)
+  barplot(dt, 
+          beside = TRUE,
+          col = c("steelblue", "coral"),
+          xlab = "Arm",
+          ylab = "Effectifs",
+          main = main,
+          legend.text = c("Favorable 0", "Favorable 1"),
+          args.legend = list(x = "top", title = NULL, cex = 0.7),
+          ylim = c(0, max(dt) * 1.1), width = 0.5)
+}
+```
+
+## Etude par groupes.
+
+Ici nous allons comparer, en colonne, le groupe A (sans injection de bicarbonate, codé 0) avec le groupe B(codé 1) qui bénéficie de l'injection de bicarbonate. En ligne l'autre variable est la variable composite Favorable (0/1) déjà présentée.
+
+```{r}
+brplot(tab_groupe, "Répartition par Arm et Favorable")
+
+#Calcul des paramètres statistiques
+groupe<-data.frame(prop(tab_groupe),fisherData(tab_groupe), row.names = "Entre groupes" )
+print(groupe)
+```
+
+Comme avec le test du chi-2, on observe une p_value (0,0031\<\<0,05 ) qui confirme un effet significatif de l'injection de bicarbonate sur l'état Favorable = 1, au global, sans différentiation des patients, entre les échantillons traité(B=1) et control (A=0)
+
+## Analyses stratifiées selon l’âge (moins de 65 ans vs 65 ans et plus)
+
+### Cas des patients d'age \< 65ans
+
+Application aux groupes A et B (traité)
+
+```{r}
+brplot(tab_Age[,,1],"< 65 ans : répartition par Arm et Favorable")
+
+moins65<-data.frame(prop(tab_Age[,,1]),fisherData(tab_Age[,,1]), row.names = "Ages < 65 ans" )
+print(as.data.frame(moins65))
+
+# création du dataframe final des résultats
+res<-rbind(groupe,moins65)
+```
+
+La p_value confirme encore les résultats du chi-2. Ici aussi, chez les moins de 65 ans, l'ajout de bicarbonate est bénéfique pour le groupe B de façon très significative. L'OR supérieur à 4 renforce intérêt de l'injection de bicarbonate pour la population des moins de 65 ans.
+
+### Cas des patients d'age \>= 65 ans
+
+```{r}
+brplot(tab_Age[,,2],">= 65 ans : répartition par Arm et Favorable")
+
+plus65<-data.frame(prop(tab_Age[,,2]),fisherData(tab_Age[,,2]), row.names = "Ages >= 65 ans" )
+print(as.data.frame(plus65))
+res<-rbind(res,plus65)
+```
+
+Comme pour le test du Chi-2, on observe une tendance positive mais non significative chez les plus de 65 ans (p_value = 0,118 \> 0,05 et OR \~1). Le test n'est pas assez puissant pour mettre en évidence le bénéfice de l'injection de bicarbonate. On va recherche la taille d'échantillons nécessaire :
+
+```{r}
+library(pwr)
+h <- ES.h(0.245, 0.168) # taille de l'effet, cad écart que l'on souhaite détecter
+n<-pwr.2p2n.test(h=h, n1= NULL, n2= 340, power = 0.8, alternative = "greater", sig.level = 0.05)
+print(n$n1)
+
+```
+
+Par essais successif, on trouve qu'avec 80% de chances, 2 échantillons de 340 individus devraient pouvoir prouver un effet significatif de l'injection de bicarbonate chez les 65 ans et plus.
+
+## Analyse stratifiée selon score Akin 0 ou 1 à l'inclusion
+
+### Cas des patients avec un score Akin = 0
+
+On procède de même grâce aux fonctions :
+
+```{r}
+brplot(tab_Akin[,,1],"Akin 0 : répartition par Arm et Favorable")
+Akin0<-data.frame(prop(tab_Akin[,,1]),fisherData(tab_Akin[,,1]), row.names = "Akin =0" )
+print(as.data.frame(Akin0))
+res<-rbind(res,Akin0)
+```
+
+La p-value égale 0,162 montre une tendance positive mais peu significatif comme l'a déjà signalé de test de Chi-2. On peut à nouveau calculer la taille de l'échantillon minimum pour montrer un effet significatif de l'ajout de bicarbonate chez les patients avec un akin 0, c'est à dire avec pas ou peu d’insuffisance rénale.
+
+```{r}
+h <- ES.h(0.16, 0.105) # taille de l'effet
+n<-pwr.2p2n.test(h=h, n1= NULL, n2= 465, power = 0.8, alternative = "greater", sig.level = 0.05)
+print(n$n1)
+```
+
+Deux échantillons de 465 individus devrait prouver l’intérêt de l'ajout de bicarbonate.
+
+### Cas des patients avec un score Akin = 1
+
+Dans le cas d'insuffisance rénal modérée à sévère :
+
+```{r}
+brplot(tab_Akin[,,2],"Akin 1 : répartition par Arm et Favorable")
+Akin1<-data.frame(prop(tab_Akin[,,2]),fisherData(tab_Akin[,,2]), row.names = "Akin =1" )
+print(as.data.frame(Akin1))
+res<-rbind(res,Akin1)
+```
+
+Comme pour le test du Chi-2, la p_value égale à 0,004 et le OR égale à presque 3 montre un fort effet significatif de l'injection de bicarbonate chez les patients avec Akin=1 du groupe B.
+
+## Analyse stratifiée selon score Sepsis 0 ou 1 à l'inclusion
+
+### Cas des patients avec un score Sepsis = 0
+
+On s’intéresse ici aux patients sans septicémie :
+
+```{r}
+brplot(tab_Sepsis[,,1],"Sepsis 0 : répartition par Arm et Favorable")
+Sepsis0<-data.frame(prop(tab_Sepsis[,,1]),fisherData(tab_Sepsis[,,1]), row.names = "Sepsis = 0" )
+print(as.data.frame(Sepsis0))
+res<-rbind(res,Sepsis0)
+```
+
+Comme pour le test du Chi-2, la p_value (0,016 \< 0,05) et l'odd ratio significativement supérieur à 1 montre l'effet significatif de l'injection de bicarbonate chez les patients sans Sepsis du groupe B.
+
+### Cas des patients avec Sepsis = 1
+
+On s’intéresse ici aux patients avec septicémie :
+
+```{r}
+brplot(tab_Sepsis[,,2],"Akin 1 : répartition par Arm et Favorable")
+Sepsis1<-data.frame(prop(tab_Sepsis[,,2]),fisherData(tab_Sepsis[,,2]), row.names = "Sepsis = 1" )
+print(as.data.frame(Sepsis1))
+res<-rbind(res,Sepsis1)
+```
+
+Ici comme dans le cas du test du Chi-2, la p_value égale à 0,057\>0,05, ne permet de conclure à un effet de l'injection de bicarbonate dans le groupe B par rapport au groupe A (sans injection de bicarbonate). Le test manque de puissance. Néanmoins, ici nous somme proche du seuil et un échantillon un peu plus grand devrait convenir :
+
+```{r}
+#Puissance du test actuel :
+h <- ES.h(0.193, 0.111) # taille de l'effet
+pow<-pwr.2p2n.test(h=h, n1= 199, n2= 201, power = NULL, alternative = "greater", sig.level = 0.05)
+print(c("Puissance =",pow$power))
+#Calcul de la taille d'échantillon pour une puissance de 80%
+n<-pwr.2p2n.test(h=h, n1= NULL, n2= 233, power = 0.8, alternative = "greater", sig.level = 0.05)
+print(c("Taille de l'échantillon =",n$n1))
+```
+
+On voit que tel que définit, le test a une puissance de 74% et que ce n'était pas suffisant mais qu'avec plus de 233 individus par échantillon, on devrait arriver prouver l'efficacité de bicarbonate chez les patients en septicémie.
+
+## Dataframe récapitulatif et ajustement des p_values
+
+On compare ici plusieurs p_value obtenues par 7 tests de Fisher. A chaque expérience, le risque de se tromper en rejetant H0 à tord (faux positif) est $\alpha$ = 0,05 et $1-\alpha$ de ne pas faire d'erreur. En répétant, m fois des tests, on alors $(1-\alpha)^m$ de faire aucune erreur et $1-(1-\alpha)^m$ de faire au moins une erreur au global. L'objectif des méthodes de correction des p_value est de maintenir le risque global à 5% en augmentant les p_values. Il existe deux types d'approches :
+
+-   Le “Family-wise error rate » (FEWR) en anglais qui contrôlent le risque alpha global de se tromper au moins une fois.
+
+-   Le “False discovery rate” (FDR) en anglais qui contrôlent le risque alpha global de se tromper au moins une fois, mais en ne considérant que les tests qui ont rejetté H0.
+
+Par ajuster nos p_values nous allons utiliser la méthode de Holm qui fait partie de la première famille FEWR. Et on obtient le tableau récapitulatif :
+
+```{r}
+res$pv_adj<-round(p.adjust(res[,6],method = "holm"),4)
+
+colnames(res)<-c("Favorable A", "Favorable B", "OR B/A", "IC min","IC max","p_value", "p_value ajustée")
+
+print(res)
+
+```
+
+Comparons d'abord les Odd Ratios avec ceux du chi-2. Ils sont identiques, ce qui confirme que la procédure pour le test Fisher exact est correct. D'autre part, les p_values sont du même ordre de grandeur et conduisent aux mêmes choix et conclusions mais on note que les p_values obtenues par le test de Fisher exact sont un peu plus faibles. Le fait d'avoir choisi fisher unilatéral explique une partie de cette différence mais les p_values ne sont pas 2 fois plus petites. Si on relance en changeant le paramètre pour "two.sided", les valeurs du test de Fisher exact sont alors un peu supérieure à celle du Chi-2.
+
+Les conclusions sur l'effet du bicarbonates sont déjà développées pour le test que chi-2. Elles sont identiques à celle du test de Fisher. On ajoutera d'abord que le nombre d'individus dans l'échantillon augmente la puissances des tests. Pour illustrer, on peut prendre deux moyennes ou proportions qui sont proches. Leur écart type, donc leur intervalle de confiance, est proportionnellement à $1/\sqrt(n)$ et alors quand n augmente, l'amplitude de l'IC diminue, jusqu'à qu'on puissent séparer les 2 grandeurs sans ambiguïté. Plus précisément, la puissance vaut $1-\beta$ où $\beta$ est le risque de deuxième espèce, risque de ne pas rejeter H0 alors que H0 est fausse (risque de faux négatif).
+
+Enfin, les p_values ajustés entraîne juste un changement pour la strate Akin = 0 qui voit son effet du bicarbonate sur la proportion de favorable = 1 n'être alors plus significatif à 5%
+
+En conclusion, entre tendances positives et résultats significatifs, l'injection de bicarbonates augmente bien le nombre de cas favorables. Pour confirmer cette étude, il faut la reproduire à plus grande échelle.
+
+# Regression logistique
 
 ## Régression logistique simple : effet du traitement SB sur l’issue favorable
 
@@ -383,10 +582,7 @@ res_mod_simple <- data.frame(
 
 res_mod_simple
 
-
-
-````
-
+```
 
 ## Régression logistique ajustée : effet du traitement SB ajusté sur l’âge, AKIN et sepsis
 
@@ -417,15 +613,13 @@ res_mod_ajuste <- data.frame(
 )
 
 res_mod_ajuste
-````
+```
 
 Après ajustement sur l’âge, le score AKIN et la présence de sepsis, le traitement par bicarbonate reste significativement associé à une issue favorable. Les patients traités ont environ 2,3 fois plus de chances d’obtenir un résultat favorable que ceux du groube sns SB (p = 0.003).
 
-L’âge et le score AKIN sont également associés à l’issue : les patients ≥65 ans et ceux avec un score AKIN >= 2 présentent chacun une probabilité plus élevée d’issu favorable. En revanche, le statut de sepsis n’a pas montré d’effet significatif dans ce modèle.
+L’âge et le score AKIN sont également associés à l’issue : les patients ≥65 ans et ceux avec un score AKIN \>= 2 présentent chacun une probabilité plus élevée d’issu favorable. En revanche, le statut de sepsis n’a pas montré d’effet significatif dans ce modèle.
 
 Globalement, le traitement conserve un effet positif même après prise en compte des autres caractéristiques cliniques.
-
-
 
 ## Régression logistique avec interactions : ARM_NUM croisé avec AGE_CLASS, INCL_AKIN et INCL_SEPSIS_YN
 
@@ -458,7 +652,7 @@ res_mod_inter <- data.frame(
 )
 
 res_mod_inter
-````
+```
 
 ### Régression logistique avec interaction ARM_NUM × AGE_CLASS
 
@@ -486,14 +680,11 @@ res_mod_inter_age <- data.frame(
 )
 
 res_mod_inter_age
-````
+```
 
+En utilisant un seuil de tolérance élargi (alpha = 10%), l’interaction ARM_NUM × AGE_CLASS devient proche du seuil (p=0.1). Cela suggère une tendance indiquant que l’effet du traitement pourrait être plus marqué chez les \<65 ans que chez les \>65 ans.
 
-En utilisant un seuil de tolérance élargi (alpha = 10%), l’interaction ARM_NUM × AGE_CLASS devient proche du seuil (p=0.1). Cela suggère une tendance indiquant que l’effet du traitement pourrait être plus marqué chez les <65 ans que chez les >65 ans.
-
-En termes de coefficients, le traitement présente un effet très important chez les <65 ans (OR = 4.4), alors que cet effet est plus modéré chez les >65 ans (OR = 1.6). L’âge et le traitement restent tous deux significatifs de manière indépendante, mais l’interaction ne l’est pas clairement.
-
-
+En termes de coefficients, le traitement présente un effet très important chez les \<65 ans (OR = 4.4), alors que cet effet est plus modéré chez les \>65 ans (OR = 1.6). L’âge et le traitement restent tous deux significatifs de manière indépendante, mais l’interaction ne l’est pas clairement.
 
 ## Régression logistique avec interaction ARM_NUM × INCL_AKIN
 
@@ -521,11 +712,9 @@ res_mod_inter_akin <- data.frame(
 )
 
 res_mod_inter_akin
-`````
+```
 
-
-
----
+------------------------------------------------------------------------
 
 ## Régression logistique avec interaction ARM_NUM × INCL_SEPSIS_YN
 
@@ -554,6 +743,4 @@ res_mod_inter_sepsis <- data.frame(
 
 res_mod_inter_sepsis
 
-````
-
-
+```
