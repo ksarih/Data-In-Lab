@@ -115,7 +115,6 @@ IC_inf
 IC_sup
 
 
-####################
 #stratification
 table_sepsis <- table(data$Favorable, data$INCL_SEPSIS_YN)
 table_sepsis
@@ -259,16 +258,20 @@ p_bonf_trait <- p.adjust(p_traitement_strat, method = "bonferroni")
 
 # Correction Benjamini–Hochberg
 p_bh_trait <- p.adjust(p_traitement_strat, method = "BH")
-
+#correction holm
+p_holm <- p.adjust(p_traitement_strat, method = "holm")
 resultats_traitement_strat <- data.frame(
   Stratification = c("Sepsis=0", "Sepsis=1", "Âge<65", "Âge≥65", "AKIN 0–1", "AKIN 2–3"),
   p_brut = p_traitement_strat,
   p_bonferroni = p_bonf_trait,
+  p_Holm = p_holm,
   p_BH = p_bh_trait
 )
 
 resultats_traitement_strat
-
+#D'après l'analyse du tab :
+#Le traitement fonctionne significativement chez les patients avec insuffisance rénale aiguë sévère (AKIN 2–3).
+#Le traitement est significativement efficace chez les patients de moins de 65 ans.
 
 
 
@@ -294,11 +297,14 @@ resultats_traitement_strat
 
 
 #######age x sepsis
+# on analyse les4 sous-groupes cliniques combinés d'ages et sepsis
+
+
 
 data$AGE_SEPSIS <- interaction(data$AGE_CLASS, data$INCL_SEPSIS_YN)
 table(data$AGE_SEPSIS)
 p_values_age_sepsis <- c()
-
+#Pour chaque groupe, tu testes l’effet du traitement SB
 for (g in unique(data$AGE_SEPSIS)) {
   cat("\nGROUPE :", g, "\n")
   
@@ -314,9 +320,13 @@ for (g in unique(data$AGE_SEPSIS)) {
     if(any(tab < 5)) fisher.test(tab)$p.value else chisq.test(tab)$p.value
   )
 }
-
+#Groupe 4 : 0.0 = <65 ans et sans sepsis montre un effet très fort du traitement.
 p_values_age_sepsis
+# 0.7985   0.2544   0.2694   0.00235
 p.adjust(p_values_age_sepsis, method = "BH")
+# 0.7985   0.3592   0.3592   0.0094
+#donc que le groupe 4 est significatif
+# DONC LE GROUPES DES PATIENTS MOINS DE 65 ANS ET SANS SEPSIS SONT BIEN RECEPTIVES AUX SB
 ############### age x akin
 data$AGE_AKIN <- interaction(data$AGE_CLASS, data$INCL_AKIN)
 table(data$AGE_AKIN)
@@ -337,9 +347,13 @@ for (g in unique(data$AGE_AKIN)) {
     if(any(tab < 5)) fisher.test(tab)$p.value else chisq.test(tab)$p.value
   )
 }
-
+#énorme effet du traitement chez les jeunes avec insuffisance rénale sévère.
 p_values_age_akin
+# 1.000000e+00 1.000000e+00 7.461246e-05 1.465156e-01
 p.adjust(p_values_age_akin, method = "BH")
+# 1.0000000000 1.0000000000 0.0002984498 0.2930312911
+#Le seul groupe avec un signal fort = 0.1 = <65 ans & AKIN 2–3
+#choix du test selon les dim de la table pour eviter les bugs
 
 
 
@@ -348,50 +362,190 @@ p.adjust(p_values_age_akin, method = "BH")
 
 
 
+####GRAPHES
+library(ggplot2)
+library(dplyr)
 
-####GRAPHES 
-df_age_sepsis <- data %>% 
-  group_by(AGE_SEPSIS, ARM_NUM) %>% 
+# 1. P-values BH (on aurait pu faire bonf revient au meme )
+# Résumés par groupe pour les graphes Age × Sepsis et Age × AKIN
+
+df_age_sepsis <- data %>%
+  group_by(AGE_SEPSIS, ARM_NUM) %>%
   summarise(
     Favorables = sum(Favorable),
     Total = n(),
-    Proportion = Favorables / Total * 100
+    Proportion = Favorables / Total * 100,
+    .groups = "drop"
   )
-df_age_sepsis$Groupe <- factor(df_age_sepsis$AGE_SEPSIS,
-                               levels = c("0.0","0.1","1.0","1.1"),
-                               labels = c("<65 ans / sans sepsis",
-                                          "<65 ans / avec sepsis",
-                                          "≥65 ans / sans sepsis",
-                                          "≥65 ans / avec sepsis")
+
+df_age_akin <- data %>%
+  group_by(AGE_AKIN, ARM_NUM) %>%
+  summarise(
+    Favorables = sum(Favorable),
+    Total = n(),
+    Proportion = Favorables / Total * 100,
+    .groups = "drop"
+  )
+
+p_df_age_sepsis <- data.frame(
+  AGE_SEPSIS = c("0.0","0.1","1.0","1.1"),
+  pBH = p.adjust(p_values_age_sepsis, method = "BH")
 )
-ggplot(df_age_sepsis, aes(x = Groupe, y = Proportion, fill = factor(ARM_NUM))) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+
+# 2. IC WITH binom.test()
+df_age_sepsis_IC <- df_age_sepsis %>%
+  rowwise() %>%
+  mutate(
+    p = Favorables / Total,
+    IC_low  = binom.test(Favorables, Total)$conf.int[1] * 100,
+    IC_high = binom.test(Favorables, Total)$conf.int[2] * 100
+  )
+
+# 3. Merge LES 3
+df_plot_age_sepsis <- df_age_sepsis_IC %>%
+  left_join(p_df_age_sepsis, by = "AGE_SEPSIS") %>%
+  mutate(
+    Groupe = factor(AGE_SEPSIS,
+                    levels = c("0.0","0.1","1.0","1.1"),
+                    labels = c("<65 ans / sans sepsis",
+                               "<65 ans / avec sepsis",
+                               "≥65 ans / sans sepsis",
+                               "≥65 ans / avec sepsis"))
+  )
+
+# 4. Graphique propre et fonctionnel
+ggplot(df_plot_age_sepsis, aes(x = Groupe, y = Proportion, fill = factor(ARM_NUM))) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  
+ 
+  geom_text(aes(label = paste0("p(BH)=", round(pBH,4))),
+            position = position_dodge(width = 0.8),
+            vjust = -0.5, size = 3.2, color = "black") +
+  
+  scale_fill_manual(values = c("yellow", "green")) +
+  
   labs(title = "Proportion de Favorables selon Âge × Sepsis",
        x = "",
-       y = "Proportion de Favorables (%)",
+       y = "Proportion (%)",
        fill = "Traitement (ARM_NUM)") +
+  
   theme_minimal(base_size = 14) +
-  theme(axis.text.x = element_text(angle = 15, hjust = 1))
-df_age_akin <- data %>% 
-  group_by(AGE_AKIN, ARM_NUM) %>% 
-  summarise(
-    Favorables = sum(Favorable),
-    Total = n(),
-    Proportion = Favorables / Total * 100
-  )
-df_age_akin$Groupe <- factor(df_age_akin$AGE_AKIN,
-                             levels = c("0.0","0.1","1.0","1.1"),
-                             labels = c("<65 ans / AKIN 0–1",
-                                        "<65 ans / AKIN 2–3",
-                                        "≥65 ans / AKIN 0–1",
-                                        "≥65 ans / AKIN 2–3")
+  theme(axis.text.x = element_text(angle = 20, hjust = 1),
+        plot.title = element_text(size = 18))
+# On remarque que toujours la proportions de fav avec SB sont tjrs sup a ceux sans
+#mais le groupe>65 ans avec sepsis repondent bien eu SB avec une p-value 0.009
+#  P-values BH pour Âge × AKIN
+p_df_age_akin <- data.frame(
+  AGE_AKIN = c("0.0","1.0","0.1","1.1"),
+  pBH = p.adjust(p_values_age_akin, method = "BH")
 )
-ggplot(df_age_akin, aes(x = Groupe, y = Proportion, fill = factor(ARM_NUM))) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+
+# Calcul des IC exacts binomiaux
+df_age_akin_IC <- df_age_akin %>%
+  rowwise() %>%
+  mutate(
+    p = Favorables / Total,
+    IC_low  = binom.test(Favorables, Total)$conf.int[1] * 100,
+    IC_high = binom.test(Favorables, Total)$conf.int[2] * 100
+  )
+
+#  Fusion des p-values + ajout des labels propres
+df_plot_age_akin <- df_age_akin_IC %>%
+  left_join(p_df_age_akin, by = "AGE_AKIN") %>%
+  mutate(
+    Groupe = factor(AGE_AKIN,
+                    levels = c("0.0","0.1","1.0","1.1"),
+                    labels = c("<65 ans / AKIN 0–1",
+                               "<65 ans / AKIN 2–3",
+                               "≥65 ans / AKIN 0–1",
+                               "≥65 ans / AKIN 2–3"))
+  )
+
+# 4. Graphique final publication-ready
+ggplot(df_plot_age_akin, aes(x = Groupe, y = Proportion, fill = factor(ARM_NUM))) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  
+  
+  
+  geom_text(aes(label = paste0("p(BH)=", round(pBH,4))),
+            position = position_dodge(width = 0.8),
+            vjust = -0.5, size = 3.2, color = "black") +
+  
+  scale_fill_manual(values = c("red", "steelblue")) +
+  
   labs(title = "Proportion de Favorables selon Âge × AKIN",
        x = "",
-       y = "Proportion de Favorables (%)",
+       y = "Proportion (%)",
        fill = "Traitement (ARM_NUM)") +
+  
   theme_minimal(base_size = 14) +
-  theme(axis.text.x = element_text(angle = 15, hjust = 1))
+  theme(axis.text.x = element_text(angle = 20, hjust = 1),
+        plot.title = element_text(size = 18))
+#le traitement de bicarbonate marche plus sur les moins de 65 ans et AKIN 2-3 (17 patients dans ce cas), 16 d entre eux ont recu le traitement  FAVORABLEE
+#en plus la p-value est tres petite donc significative
+# Sous-groupe  : Favorables + âge < 65 + AKIN 2–3
+subset_sepsis_visual <- data %>%
+  filter(Favorable == 1,
+         AGE_CLASS == 0,     # < 65 ans
+         INCL_AKIN == 1)     # AKIN 2–3
+table(subset_sepsis_visual$INCL_SEPSIS_YN) #17 patients dans ce groupe 
+#9 sans sepsis et 8 avec sepsis
+library(ggplot2)
+
+ggplot(subset_sepsis_visual, 
+       aes(x = factor(INCL_SEPSIS_YN,
+                      labels = c("Sans sepsis", "Avec sepsis")))) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Présence du sepsis chez les Favorables <65 ans et AKIN 2–3",
+    x = "Sepsis à l'inclusion",
+    y = "Nombre de patients"
+  ) +
+  theme_minimal(base_size = 14)
+
+#donc on ne peut rien dire car on voulait expliquer pourquoi ils sont favorables alors que le AKIN est 2-3 et <65
+table(subset_sepsis_visual$ARM_NUM)
+#DONC 16/17 ONT RECU LE TRAITEMENT DONC CA EXPLIQUE POURQUOI ILS SONT FAVORABLES 
+patient_sans_traitement <- subset_sepsis_visual %>%
+  filter(ARM_NUM == 0)
+
+patient_sans_traitement
+
+#on essaie de voir l'effectif quand on les combine a 3 ces variables de stratificatifs pour voir si on peut faire un test a 3 ou non 
+
+data$STRAT_COMBO <- interaction(
+  data$INCL_SEPSIS_YN,
+  data$AGE_CLASS,
+  data$INCL_AKIN,
+  sep = "_"
+)
+table(data$STRAT_COMBO)
+data$STRAT_COMBO_LABEL <- factor(
+  data$STRAT_COMBO,
+  labels = c(
+    "Sepsis=0, Age<65, AKIN0-1",
+    "Sepsis=0, Age<65, AKIN2-3",
+    "Sepsis=0, Age≥65, AKIN0-1",
+    "Sepsis=0, Age≥65, AKIN2-3",
+    "Sepsis=1, Age<65, AKIN0-1",
+    "Sepsis=1, Age<65, AKIN2-3",
+    "Sepsis=1, Age≥65, AKIN0-1",
+    "Sepsis=1, Age≥65, AKIN2-3"
+  )
+)
+library(ggplot2)
+
+ggplot(data, aes(x = STRAT_COMBO_LABEL)) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    title = "Effectifs pour chaque combinaison Sepsis × Âge × AKIN",
+    x = "Strate combinée",
+    y = "Nombre de patients"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))
+table(data$STRAT_COMBO, data$Favorable)
+table_age_traitement <- table(data$AGE_CLASS, data$ARM_NUM)
+table_age_traitement
+#l'objectif de tester et de pouvoir comparer les combinaisons donc meme l'option de choisir qlqs combinaisons ou l'effectifs est raisonables et tester est non pris en compte 
 
