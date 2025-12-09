@@ -1,8 +1,12 @@
 ---
 title: "DATA IN LAB"
-output: html_document
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
 date: "2025-11-26"
 ---
+
 
 # Introduction
 
@@ -57,14 +61,19 @@ data$Sofa_ok<-rep(NA, 400)
 data$Favorable<-rep(NA, 400)
 
 for (i in 1:400) {
-  data[i,"Sofa_ok"]<-if (max(data[i,c("SOFA_hepatic_D7","SOFA_cardiovasc_D7", "SOFA_respiratory_D7", "SOFA_neurologic_D7", "SOFA_renal_D7", "SOFA_haematologic_D7")]) < 3) 1 else 0 #Sofa_ok
-  data[i,'Favorable']<-if(data[i,"VITAL_STATUS_D28"]== 1 & data[i,"Sofa_ok"]==1) 1 else 0 #Favorable 1/0
+  data[i,"Sofa_ok"]<-if (max(data[i,c("SOFA_hepatic_D7","SOFA_cardiovasc_D7",
+                                      "SOFA_respiratory_D7", "SOFA_neurologic_D7",
+                                      "SOFA_renal_D7",
+                                      "SOFA_haematologic_D7")]) < 3) 1 else 0 #Sofa_ok
+  data[i,'Favorable']<-if(data[i,"VITAL_STATUS_D28"]== 1 
+                          & data[i,"Sofa_ok"]==1) 1 else 0 #Favorable 1/0
 }
 
 
 
 data <- data %>%
-  select (SUBJID, INCL_SEPSIS_YN, AGE_CLASS, INCL_AKIN, VITAL_STATUS_D28, Sofa_ok, Favorable, ARM_NUM)
+  select (SUBJID, INCL_SEPSIS_YN, AGE_CLASS, INCL_AKIN, VITAL_STATUS_D28,
+          Sofa_ok, Favorable, ARM_NUM)
 
 head(data)
 ```
@@ -114,7 +123,7 @@ res_chi2$p.value
 
 ```
 
-On obtient une p_value = 0.00428 \< 0.05 donc on rejette HO donc une issue favorable dépend du traitement reçu
+On obtient une p_value = 0.00428 < 0.05 donc on rejette HO donc une issue favorable dépend du traitement reçu.
 
 ## Test du CHI2 pour chaque sous groupe
 
@@ -143,7 +152,7 @@ tab_age1
 test_age1
 ```
 
-Donc on a une p-values 0.002505 \< 0.05 donc le traitement est efficace sur les personnes de moins de 65 ans. Chez les patients de plus de 65 ans, on ne met pas en évidence association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 1,85 ; p = 0,17 \> 0.05)
+Donc on a une p-values 0.002505 < 0.05 donc le traitement est efficace sur les personnes de moins de 65 ans. Chez les patients de plus de 65 ans, on ne met pas en évidence association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 1,85 ; p = 0,17 > 0.05)
 
 ### AKIN
 
@@ -172,7 +181,7 @@ OR_AKIN1
 
 Pour les patients ayant un score AKIN de 0 ou 1 le test n'est pas significatif les résultats peuvent etre du au hasard.
 
-Chez les patients avec AKIN = 1, il existe une association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 7,88 ; p = 0,005 \< 0.05). La proportion d’issues favorables est d’environ 29 % sous SB contre 12,5 % sans SB. les odds d’issue favorable sont ≈ 2,9 fois plus élevées sous SB que sans SB chez les patients AKIN = 1.
+Chez les patients avec AKIN = 1, il existe une association statistiquement significative entre le traitement par bicarbonate et l’issue favorable (chi2(1) = 7,88 ; p = 0,005 < 0.05). La proportion d’issues favorables est d’environ 29 % sous SB contre 12,5 % sans SB. les odds d’issue favorable sont = 2,9 fois plus élevées sous SB que sans SB chez les patients AKIN = 1.
 
 ### sepsis
 
@@ -324,9 +333,9 @@ L’étude par sous-groupe révèle une forte hétérogénéité selon l’âge.
 
 Une hétérogénéité comparable apparaît selon le degré d’atteinte rénale. Chez les patients avec AKIN = 0, aucun effet significatif n’est détecté. En revanche, chez ceux présentant une atteinte rénale modérée (AKIN = 1), le traitement est associé à un gain net (OR = 2,86 ; IC95% : 1,35–6,08). Le SB semble donc particulièrement bénéfique lorsque l’atteinte rénale est déjà présente.
 
-Le traitement SB améliore significativement l’issue favorable chez les patients sans sepsis (OR = 2,63 ; p = 0,019). Chez les patients avec sepsis, une tendance en faveur du traitement est observée (OR = 1,92), mais celle-ci n’atteint pas le seuil de significativité statistique (p = 0,079\>0,05). Le bénéfice du SB semble donc plus marqué chez les patients non septicémiques.
+Le traitement SB améliore significativement l’issue favorable chez les patients sans sepsis (OR = 2,63 ; p = 0,019). Chez les patients avec sepsis, une tendance en faveur du traitement est observée (OR = 1,92), mais celle-ci n’atteint pas le seuil de significativité statistique (p = 0,079 >0,05). Le bénéfice du SB semble donc plus marqué chez les patients non septicémiques.
 
-En résumé, le traitement au bicarbonate (SB) montre un effet favorable global, mais celui-ci varie selon les caractéristiques des patients. Les sous-groupes qui tirent le plus grand bénéfice sont les patients jeunes (\<65 ans), avec AKIN = 1, et sans sepsis. Chez les patients plus âgés ou septicémiques, l’effet apparaît moins net et un effectif plus important est nécessaire pour prouver un effet significatif.
+En résumé, le traitement au bicarbonate (SB) montre un effet favorable global, mais celui-ci varie selon les caractéristiques des patients. Les sous-groupes qui tirent le plus grand bénéfice sont les patients jeunes (<65 ans), avec AKIN = 1, et sans sepsis. Chez les patients plus âgés ou septicémiques, l’effet apparaît moins net et un effectif plus important est nécessaire pour prouver un effet significatif.
 
 # Test de Fisher exact
 
@@ -398,22 +407,24 @@ Ici nous allons comparer, en colonne, le groupe A (sans injection de bicarbonate
 brplot(tab_groupe, "Répartition par Arm et Favorable")
 
 #Calcul des paramètres statistiques
-groupe<-data.frame(prop(tab_groupe),fisherData(tab_groupe), row.names = "Entre groupes" )
+groupe<-data.frame(prop(tab_groupe),fisherData(tab_groupe),
+                   row.names = "Entre groupes" )
 print(groupe)
 ```
 
-Comme avec le test du chi-2, on observe une p_value (0,0031\<\<0,05 ) qui confirme un effet significatif de l'injection de bicarbonate sur l'état Favorable = 1, au global, sans différentiation des patients, entre les échantillons traité(B=1) et control (A=0)
+Comme avec le test du chi-2, on observe une p_value (0,0031 < 0,05 ) qui confirme un effet significatif de l'injection de bicarbonate sur l'état Favorable = 1, au global, sans différentiation des patients, entre les échantillons traité(B=1) et control (A=0)
 
 ## Analyses stratifiées selon l’âge (moins de 65 ans vs 65 ans et plus)
 
-### Cas des patients d'age \< 65ans
+### Cas des patients d'age < 65ans
 
 Application aux groupes A et B (traité)
 
 ```{r}
 brplot(tab_Age[,,1],"< 65 ans : répartition par Arm et Favorable")
 
-moins65<-data.frame(prop(tab_Age[,,1]),fisherData(tab_Age[,,1]), row.names = "Ages < 65 ans" )
+moins65<-data.frame(prop(tab_Age[,,1]),fisherData(tab_Age[,,1]),
+                    row.names = "Ages < 65 ans" )
 print(as.data.frame(moins65))
 
 # création du dataframe final des résultats
@@ -422,22 +433,24 @@ res<-rbind(groupe,moins65)
 
 La p_value confirme encore les résultats du chi-2. Ici aussi, chez les moins de 65 ans, l'ajout de bicarbonate est bénéfique pour le groupe B de façon très significative. L'OR supérieur à 4 renforce intérêt de l'injection de bicarbonate pour la population des moins de 65 ans.
 
-### Cas des patients d'age \>= 65 ans
+### Cas des patients d'age >= 65 ans
 
 ```{r}
 brplot(tab_Age[,,2],">= 65 ans : répartition par Arm et Favorable")
 
-plus65<-data.frame(prop(tab_Age[,,2]),fisherData(tab_Age[,,2]), row.names = "Ages >= 65 ans" )
+plus65<-data.frame(prop(tab_Age[,,2]),fisherData(tab_Age[,,2]),
+                   row.names = "Ages >= 65 ans" )
 print(as.data.frame(plus65))
 res<-rbind(res,plus65)
 ```
 
-Comme pour le test du Chi-2, on observe une tendance positive mais non significative chez les plus de 65 ans (p_value = 0,118 \> 0,05 et OR \~1). Le test n'est pas assez puissant pour mettre en évidence le bénéfice de l'injection de bicarbonate. On va recherche la taille d'échantillons nécessaire :
+Comme pour le test du Chi-2, on observe une tendance positive mais non significative chez les plus de 65 ans (p_value = 0,118 > 0,05 et OR 1). Le test n'est pas assez puissant pour mettre en évidence le bénéfice de l'injection de bicarbonate. On va recherche la taille d'échantillons nécessaire :
 
 ```{r}
 library(pwr)
 h <- ES.h(0.245, 0.168) # taille de l'effet, cad écart que l'on souhaite détecter
-n<-pwr.2p2n.test(h=h, n1= NULL, n2= 340, power = 0.8, alternative = "greater", sig.level = 0.05)
+n<-pwr.2p2n.test(h=h, n1= NULL, n2= 340, power = 0.8,
+                 alternative = "greater", sig.level = 0.05)
 print(n$n1)
 
 ```
@@ -452,7 +465,8 @@ On procède de même grâce aux fonctions :
 
 ```{r}
 brplot(tab_Akin[,,1],"Akin 0 : répartition par Arm et Favorable")
-Akin0<-data.frame(prop(tab_Akin[,,1]),fisherData(tab_Akin[,,1]), row.names = "Akin =0" )
+Akin0<-data.frame(prop(tab_Akin[,,1]),
+                  fisherData(tab_Akin[,,1]), row.names = "Akin =0" )
 print(as.data.frame(Akin0))
 res<-rbind(res,Akin0)
 ```
@@ -461,7 +475,8 @@ La p-value égale 0,162 montre une tendance positive mais peu significatif comme
 
 ```{r}
 h <- ES.h(0.16, 0.105) # taille de l'effet
-n<-pwr.2p2n.test(h=h, n1= NULL, n2= 465, power = 0.8, alternative = "greater", sig.level = 0.05)
+n<-pwr.2p2n.test(h=h, n1= NULL, n2= 465, power = 0.8,
+                 alternative = "greater", sig.level = 0.05)
 print(n$n1)
 ```
 
@@ -473,7 +488,8 @@ Dans le cas d'insuffisance rénal modérée à sévère :
 
 ```{r}
 brplot(tab_Akin[,,2],"Akin 1 : répartition par Arm et Favorable")
-Akin1<-data.frame(prop(tab_Akin[,,2]),fisherData(tab_Akin[,,2]), row.names = "Akin =1" )
+Akin1<-data.frame(prop(tab_Akin[,,2]),fisherData(tab_Akin[,,2]),
+                  row.names = "Akin =1" )
 print(as.data.frame(Akin1))
 res<-rbind(res,Akin1)
 ```
@@ -488,12 +504,13 @@ On s’intéresse ici aux patients sans septicémie :
 
 ```{r}
 brplot(tab_Sepsis[,,1],"Sepsis 0 : répartition par Arm et Favorable")
-Sepsis0<-data.frame(prop(tab_Sepsis[,,1]),fisherData(tab_Sepsis[,,1]), row.names = "Sepsis = 0" )
+Sepsis0<-data.frame(prop(tab_Sepsis[,,1]),
+                    fisherData(tab_Sepsis[,,1]), row.names = "Sepsis = 0" )
 print(as.data.frame(Sepsis0))
 res<-rbind(res,Sepsis0)
 ```
 
-Comme pour le test du Chi-2, la p_value (0,016 \< 0,05) et l'odd ratio significativement supérieur à 1 montre l'effet significatif de l'injection de bicarbonate chez les patients sans Sepsis du groupe B.
+Comme pour le test du Chi-2, la p_value (0,016 < 0,05) et l'odd ratio significativement supérieur à 1 montre l'effet significatif de l'injection de bicarbonate chez les patients sans Sepsis du groupe B.
 
 ### Cas des patients avec Sepsis = 1
 
@@ -501,20 +518,23 @@ On s’intéresse ici aux patients avec septicémie :
 
 ```{r}
 brplot(tab_Sepsis[,,2],"Akin 1 : répartition par Arm et Favorable")
-Sepsis1<-data.frame(prop(tab_Sepsis[,,2]),fisherData(tab_Sepsis[,,2]), row.names = "Sepsis = 1" )
+Sepsis1<-data.frame(prop(tab_Sepsis[,,2]),
+                    fisherData(tab_Sepsis[,,2]), row.names = "Sepsis = 1" )
 print(as.data.frame(Sepsis1))
 res<-rbind(res,Sepsis1)
 ```
 
-Ici comme dans le cas du test du Chi-2, la p_value égale à 0,057\>0,05, ne permet de conclure à un effet de l'injection de bicarbonate dans le groupe B par rapport au groupe A (sans injection de bicarbonate). Le test manque de puissance. Néanmoins, ici nous somme proche du seuil et un échantillon un peu plus grand devrait convenir :
+Ici comme dans le cas du test du Chi-2, la p_value égale à 0,057>0,05, ne permet de conclure à un effet de l'injection de bicarbonate dans le groupe B par rapport au groupe A (sans injection de bicarbonate). Le test manque de puissance. Néanmoins, ici nous somme proche du seuil et un échantillon un peu plus grand devrait convenir :
 
 ```{r}
 #Puissance du test actuel :
 h <- ES.h(0.193, 0.111) # taille de l'effet
-pow<-pwr.2p2n.test(h=h, n1= 199, n2= 201, power = NULL, alternative = "greater", sig.level = 0.05)
+pow<-pwr.2p2n.test(h=h, n1= 199, n2= 201, power = NULL,
+                   alternative = "greater", sig.level = 0.05)
 print(c("Puissance =",pow$power))
 #Calcul de la taille d'échantillon pour une puissance de 80%
-n<-pwr.2p2n.test(h=h, n1= NULL, n2= 233, power = 0.8, alternative = "greater", sig.level = 0.05)
+n<-pwr.2p2n.test(h=h, n1= NULL, n2= 233, power = 0.8,
+                 alternative = "greater", sig.level = 0.05)
 print(c("Taille de l'échantillon =",n$n1))
 ```
 
@@ -533,7 +553,8 @@ Par ajuster nos p_values nous allons utiliser la méthode de Holm qui fait parti
 ```{r}
 res$pv_adj<-round(p.adjust(res[,6],method = "holm"),4)
 
-colnames(res)<-c("Favorable A", "Favorable B", "OR B/A", "IC min","IC max","p_value", "p_value ajustée")
+colnames(res)<-c("Favorable A", "Favorable B",
+                 "OR B/A", "IC min","IC max","p_value", "p_value ajustée")
 
 print(res)
 
@@ -617,7 +638,7 @@ res_mod_ajuste
 
 Après ajustement sur l’âge, le score AKIN et la présence de sepsis, le traitement par bicarbonate reste significativement associé à une issue favorable. Les patients traités ont environ 2,3 fois plus de chances d’obtenir un résultat favorable que ceux du groube sns SB (p = 0.003).
 
-L’âge et le score AKIN sont également associés à l’issue : les patients ≥65 ans et ceux avec un score AKIN \>= 2 présentent chacun une probabilité plus élevée d’issu favorable. En revanche, le statut de sepsis n’a pas montré d’effet significatif dans ce modèle.
+L’âge et le score AKIN sont également associés à l’issue : les patients ≥65 ans et ceux avec un score AKIN >= 2 présentent chacun une probabilité plus élevée d’issu favorable. En revanche, le statut de sepsis n’a pas montré d’effet significatif dans ce modèle.
 
 Globalement, le traitement conserve un effet positif même après prise en compte des autres caractéristiques cliniques.
 
@@ -682,9 +703,9 @@ res_mod_inter_age <- data.frame(
 res_mod_inter_age
 ```
 
-En utilisant un seuil de tolérance élargi (alpha = 10%), l’interaction ARM_NUM × AGE_CLASS devient proche du seuil (p=0.1). Cela suggère une tendance indiquant que l’effet du traitement pourrait être plus marqué chez les \<65 ans que chez les \>65 ans.
+En utilisant un seuil de tolérance élargi (alpha = 10%), l’interaction ARM_NUM × AGE_CLASS devient proche du seuil (p=0.1). Cela suggère une tendance indiquant que l’effet du traitement pourrait être plus marqué chez les <65 ans que chez les >65 ans.
 
-En termes de coefficients, le traitement présente un effet très important chez les \<65 ans (OR = 4.4), alors que cet effet est plus modéré chez les \>65 ans (OR = 1.6). L’âge et le traitement restent tous deux significatifs de manière indépendante, mais l’interaction ne l’est pas clairement.
+En termes de coefficients, le traitement présente un effet très important chez les <65 ans (OR = 4.4), alors que cet effet est plus modéré chez les >65 ans (OR = 1.6). L’âge et le traitement restent tous deux significatifs de manière indépendante, mais l’interaction ne l’est pas clairement.
 
 ## Régression logistique avec interaction ARM_NUM × INCL_AKIN
 

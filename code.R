@@ -394,3 +394,4 @@ ggplot(df_age_akin, aes(x = Groupe, y = Proportion, fill = factor(ARM_NUM))) +
        fill = "Traitement (ARM_NUM)") +
   theme_minimal(base_size = 14) +
   theme(axis.text.x = element_text(angle = 15, hjust = 1))
+
